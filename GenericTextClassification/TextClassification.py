@@ -37,11 +37,13 @@ class TextClassificationModel:
     def feature_segregation(self):
         # The error message "Found input variables with inconsistent numbers of samples" is occurring because the number of rows in the multiple text columns you passed in as text_columns is different from the number of rows in the categorical column you passed in as categorical_column.
         # One solution for this is to concatenate the multiple text columns into a single column by using the apply function from pandas and passing in a lambda function that concatenates the values of the two text columns together with a separator in between.
-        self.df["text"] = self.df[self.text_columns].apply(lambda x: " ".join(x), axis=1)
-        
-        
+        if len(self.text_columns)>1:
+            self.df["text"] = self.df[self.text_columns].apply(lambda x: " ".join(x), axis=1)
+        else:
+            self.df["text"] = self.df[self.text_columns[0]] 
         self.X = self.df["text"]
         self.y = self.df[self.categorical_column]
+        
         #save original lables
         self.label_mapping = dict(enumerate(self.y.unique()))
         
