@@ -2,11 +2,15 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier, RandomForestClassifier
 from sklearn.svm import LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
 import pickle
 
 class TextClassificationModel:
@@ -56,8 +60,12 @@ class TextClassificationModel:
         self.models = {
             'Logistic Regression': LogisticRegression(),
             'Naive Bayes': MultinomialNB(),
+            'Decision Tree': DecisionTreeClassifier(),
             'Random Forest': RandomForestClassifier(),
-            'Linear SVC': LinearSVC()
+            'Linear SVC': LinearSVC(),
+            'KNeighborsClassifier': KNeighborsClassifier(),
+            'Gradient Boosting': GradientBoostingClassifier(),
+            'AdaBoost': AdaBoostClassifier()
         }
 
         self.best_model = None
@@ -66,10 +74,20 @@ class TextClassificationModel:
             model.fit(self.X_train, self.y_train)
             predictions = model.predict(self.X_test)
             accuracy = accuracy_score(self.y_test, predictions)
+            precision = precision_score(self.y_test, predictions, average='weighted',zero_division=1)
+            recall = recall_score(self.y_test, predictions, average='weighted',zero_division=1)
+            f1 = f1_score(self.y_test, predictions, average='weighted')
+            print(f'{name}\n')
             print(f'{name} accuracy: {accuracy}')
+            print(f'{name} precision: {precision}')
+            print(f'{name} recall: {recall}')
+            print(f'{name} f1 score: {f1}')
+            print("-------------------------------------")
             if accuracy > self.best_accuracy:
                 self.best_accuracy = accuracy
                 self.best_model = model
+            print(self.best_model)
+
 
     def save_model(self, filename):
         with open(filename, 'wb') as f:
@@ -78,6 +96,7 @@ class TextClassificationModel:
     def load_model(self, filename):
         with open(filename, 'rb') as file:
             self.best_model = pickle.load(file)
+            print("----------------",self.best_model)
 
     def predict(self, data):
         data = self.vectorizer.transform(data)
@@ -100,19 +119,21 @@ class TextClassificationModel:
 dataframe = pd.read_csv("data.csv")
 text_classification_model = TextClassificationModel(
     dataframe, ["Ticket_Title", "Application"], "Master_SOP")
-# text_classification_model.show_summary()
+text_classification_model.show_summary()
 text_classification_model.clean_dataset()
 text_classification_model.feature_segregation()
 text_classification_model.feature_extraction()
 text_classification_model.train_model()
+text_classification_model.save_model('best_model.pickle')
+text_classification_model.load_model('best_model.pickle')
 
-# text_data = dataframe[["Ticket_Title", "Application"]].apply(lambda x: " ".join(x), axis=1)
-# predictions = text_classification_model.predict(text_data)
-# print(predictions)
+text_data = dataframe[["Ticket_Title", "Application"]].apply(lambda x: " ".join(x), axis=1)
+predictions = text_classification_model.predict(text_data)
+print(predictions)
 
 # Add the predictions as a new column in the dataframe
-# dataframe['predicted_class'] = predictions
-# print(dataframe['predicted_class'])
+dataframe['predicted_class'] = predictions
+print(dataframe['predicted_class'])
 
 # text_data = dataframe[["Ticket_Title", "Application"]].apply(lambda x: " ".join(x), axis=1)
 # text_data = text_data.tolist()
@@ -135,6 +156,7 @@ df = pd.DataFrame(data)
 
 # concatenate the values of the two columns
 df['text_data'] = df['Ticket_Title'] + ' ' + df['Application']
+print(df)
 
 # predict on the 'text_data' column
 predictions = text_classification_model.predict(df['text_data'])
